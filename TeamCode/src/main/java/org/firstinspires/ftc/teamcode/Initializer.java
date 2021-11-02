@@ -6,8 +6,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 public class Initializer {
     public static void initializeGrabber(Servo grabber, DcMotor linearSlide, LinearOpMode opMode) {
-        grabber.setPosition(0.5);
-        while (grabber.getPosition() < 0.5) ;
+        grabber.setPosition(0.6);
+        while (grabber.getPosition() < 0.6) ;
         opMode.telemetry.addData("done servo", "true");
         opMode.telemetry.update();
         try {
