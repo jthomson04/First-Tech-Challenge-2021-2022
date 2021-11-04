@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
@@ -61,13 +62,27 @@ public class Auto extends LinearOpMode {
         gyroForward(0.2, 1000, 180);
         gyroTurn(0);*/
 
-        while (opModeIsActive()) {
-            updateRecognitions();
-            displayRecognitions();
-            telemetry.update();
+        DuckPosition duckPosition = findDuckPosition();
+        telemetry.addData("Position", duckPosition);
+
+
+    }
+
+    private DuckPosition findDuckPosition() {
+        Recognition duck = waitUntilObjectFound("Duck", 5000);
+        if (duck == null) {
+            return DuckPosition.MIDDLE;
         }
-
-
+        double angle = duck.estimateAngleToObject(AngleUnit.DEGREES);
+        telemetry.addData("Duck Angle", angle);
+        telemetry.update();
+        if (Math.abs(angle) < 10) {
+            return DuckPosition.MIDDLE;
+        } else if (angle < 0) {
+            return DuckPosition.LEFT;
+        } else {
+            return DuckPosition.RIGHT;
+        }
     }
 
     private void showOrientation() {
@@ -137,6 +152,31 @@ public class Auto extends LinearOpMode {
         }
     }
 
+    private Recognition waitUntilObjectFound(String label, long msTimeout) {
+        long end = SystemClock.elapsedRealtime() + msTimeout;
+        while (true) {
+            updateRecognitions();
+            if (objectRecognitions != null) {
+                Recognition recognition = recognitionsContainsLabel(objectRecognitions, label);
+                if (recognition != null) {
+                    return recognition;
+                }
+            }
+            if (SystemClock.elapsedRealtime() >= end) {
+                return null;
+            }
+        }
+    }
+
+    private Recognition recognitionsContainsLabel(List<Recognition> recognitions, String label) {
+        for (Recognition recognition : recognitions) {
+            if (recognition.getLabel().equals(label)) {
+                return recognition;
+            }
+        }
+        return null;
+    }
+
     private void updateOrientation() {
         float currentAngle = processAngle(drive.getOrientation().thirdAngle);
         telemetry.addData("processedangle", currentAngle);
@@ -164,7 +204,7 @@ public class Auto extends LinearOpMode {
     }
 
     private void initCV() {
-        initCV(1.5, 16.0 / 9.0);
+        initCV(1, 16.0 / 9.0);
     }
 
     private void initCV(double magnification, double aspectRatio) {
@@ -204,10 +244,10 @@ public class Auto extends LinearOpMode {
         }
     }
 
-    private void displayRecognitions() {
+    private void displayRecognitions(List<Recognition> recognitions) {
         int i = 0;
-        if (objectRecognitions != null) {
-            for (Recognition recognition : objectRecognitions) {
+        if (recognitions != null) {
+            for (Recognition recognition : recognitions) {
                 telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
                 telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
                         recognition.getLeft(), recognition.getTop());
