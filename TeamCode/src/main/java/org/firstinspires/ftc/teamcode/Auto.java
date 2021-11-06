@@ -53,19 +53,9 @@ public class Auto extends LinearOpMode {
 
 
         waitForStart();
-
-        /*gyroTurn(360);
-        delay(2000);
-        gyroTurn(0);
-        gyroForward(0.2, 1000, 0);
-        gyroTurn(180);
-        gyroForward(0.2, 1000, 180);
-        gyroTurn(0);*/
-
-        DuckPosition duckPosition = findDuckPosition();
-        telemetry.addData("Position", duckPosition);
-
-
+        strafe(true, 0.5, 1000, 0);
+        wait(1000);
+        strafe(false, 0.5, 1000, 0);
     }
 
     private DuckPosition findDuckPosition() {
@@ -89,7 +79,7 @@ public class Auto extends LinearOpMode {
         telemetry.addData("Orientation", cumulativeAngle);
     }
 
-    private void gyroTurn(double desiredAngle, double turnPower, double closeRangePower, double slowDownCutoff) {
+    private void turn(double desiredAngle, double turnPower, double closeRangePower, double slowDownCutoff) {
         // gyroscopic turning for autonomous
         updateOrientation();
         float initialAngle = cumulativeAngle;
@@ -116,12 +106,12 @@ public class Auto extends LinearOpMode {
         drive.setMotorPowers(0, 0, 0, 0);
     }
 
-    private void gyroTurn(double desiredAngle) {
-        gyroTurn(desiredAngle, 0.8, 0.2, 0.8);
+    private void turn(double desiredAngle) {
+        turn(desiredAngle, 0.8, 0.2, 0.8);
     }
 
 
-    private void gyroForward(double power, int millis, float maintainAngle) {
+    private void forward(double power, int millis, float maintainAngle) {
         long endTime = SystemClock.elapsedRealtime() + millis;
         while (opModeIsActive()) {
             updateOrientation();
@@ -139,10 +129,33 @@ public class Auto extends LinearOpMode {
                 break;
             }
         }
+        drive.setMotorPowers(0, 0, 0, 0);
     }
 
+    private void strafe(boolean left, double power, int millis, float maintainAngle) {
+        long endTime = SystemClock.elapsedRealtime() + millis;
+        int mult = left ? 1 : -1;
+        while (opModeIsActive()) {
+            updateOrientation();
+            double error = maintainAngle - cumulativeAngle;
+            double offset = error * 0.01;
+            showOrientation();
+            telemetry.addData("Power Offset", offset);
+            telemetry.addData("Time Remaining", endTime - SystemClock.elapsedRealtime());
+            telemetry.update();
 
-    private void delay(int millis) {
+            drive.setMotorPowers(power * mult + offset, -power * mult - offset, -power * mult + offset, power * mult - offset);
+
+            if (SystemClock.elapsedRealtime() >= endTime) {
+                break;
+            }
+        }
+        drive.setMotorPowers(0, 0, 0, 0);
+
+
+    }
+
+    private void wait(int millis) {
         long initTime = SystemClock.elapsedRealtime();
         long endTime = initTime + millis;
         while (opModeIsActive()) {
