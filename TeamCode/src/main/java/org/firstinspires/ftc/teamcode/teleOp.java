@@ -42,9 +42,7 @@ public class teleOp extends LinearOpMode {
         boolean previouslyUpDownPressed = false;
 
         waitForStart();
-        Initializer.initializeGrabber(slide.grabber, slide.slide, this);
-        slide.slide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        slide.slide.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
         long prevPress = 0;
         while (opModeIsActive()) {
             prevTargetMode = targetMode;

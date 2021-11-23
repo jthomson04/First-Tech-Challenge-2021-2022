@@ -3,13 +3,17 @@ package org.firstinspires.ftc.teamcode;
 import android.os.SystemClock;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
@@ -28,14 +32,13 @@ public class Auto extends LinearOpMode {
             "Marker"
     };
     private static final String VUFORIA_KEY = "AcRDh/L/////AAABmSXgpqzx70p0vDh2eqv9N6YEI6fwUF4tbXNAvrYXcMt+Zbq6qXM2z4Aq7KnWGblN2ZiCjGIpLlWeXL7IQrtvBJFzPNil285nzLsLg/KWynX1Pss7RKL7i/O4hFxsorVD/+4kMvkFMV7q1uVt4mY4d+SuChH3vAQA6t5NnVJGhh6M+eAeLcQYTF9KCkNL0xgXYeg06BPbppTydDgNRqTrsGwZgegIHutSHH89R/P1NdR9arRifjrfUtNEoIHglPMJ7Mh3PeFH3CpcTBfdgCuYcQCZb0lGAMI8v0Nlwh6lHkRmUFjQsfR+ujiiAAx0agouc2mEy1dK/lLDq34ZtcoAqNEpI1zinV8lkpVvFE3y9xL4";
-    private MecanumDrive drive;
     private float cumulativeAngle = 0;
     private float prevAngle = 0;
     private VuforiaLocalizer vuforia;
     private TFObjectDetector tfod;
-
+    private MecanumDrive drive;
     private List<Recognition> objectRecognitions;
-
+    private RevColorSensorV3 color;
     @Override
     public void runOpMode() {
 
@@ -45,23 +48,45 @@ public class Auto extends LinearOpMode {
         DcMotor backRight = hardwareMap.dcMotor.get("backright");
         DcMotor frontLeft = hardwareMap.dcMotor.get("frontleft");
         DcMotor frontRight = hardwareMap.dcMotor.get("frontright");
-
-
+        LinearSlide slide = new LinearSlide(hardwareMap.get(DcMotor.class, "linearslide"), hardwareMap.get(DcMotor.class, "rotator"), hardwareMap.get(Servo.class, "grabber"));
+        CarouselRotator rotator = new CarouselRotator(hardwareMap.get(DcMotor.class, "carousel"));
         drive = new MecanumDrive(frontLeft, frontRight, backLeft, backRight, imu);
+        color = hardwareMap.get(RevColorSensorV3.class, "color");
 
         initCV();
-
-
         waitForStart();
-        strafe(true, 0.5, 1000, 0);
-        wait(1000);
-        strafe(false, 0.5, 1000, 0);
+        /*Initializer.initializeGrabber(slide.grabber, slide.slide, this);
+        DuckPosition duck = findDuckPosition(7000);
+        telemetry.addData("Duck Position", duck == null ? "Unknown" : duck.toString());
+        telemetry.update();
+        slide.setGrabberPosition(true, false);
+        forward(0.35, 500, 0);
+        strafe(true, 0.5, 1000, 0);*/
+
+
+
+
+
     }
 
-    private DuckPosition findDuckPosition() {
-        Recognition duck = waitUntilObjectFound("Duck", 5000);
+    private double[] getColorData() {
+        int red = color.red();
+        int green = color.green();
+        int blue = color.blue();
+        int total = red + green + blue;
+        return new double[] {
+                (double)red / total,
+                (double)green / total,
+                (double)blue / total,
+                color.alpha(),
+                color.getDistance(DistanceUnit.CM)
+        };
+    }
+
+    private DuckPosition findDuckPosition(int msTimeout) {
+        Recognition duck = waitUntilObjectFound("Duck", msTimeout);
         if (duck == null) {
-            return DuckPosition.MIDDLE;
+            return null;
         }
         double angle = duck.estimateAngleToObject(AngleUnit.DEGREES);
         telemetry.addData("Duck Angle", angle);
@@ -107,7 +132,7 @@ public class Auto extends LinearOpMode {
     }
 
     private void turn(double desiredAngle) {
-        turn(desiredAngle, 0.8, 0.2, 0.8);
+        turn(desiredAngle, 0.8, 0.4, 0.8);
     }
 
 
@@ -132,9 +157,9 @@ public class Auto extends LinearOpMode {
         drive.setMotorPowers(0, 0, 0, 0);
     }
 
-    private void strafe(boolean left, double power, int millis, float maintainAngle) {
+    private void strafe(boolean right, double power, int millis, float maintainAngle) {
         long endTime = SystemClock.elapsedRealtime() + millis;
-        int mult = left ? 1 : -1;
+        int mult = right ? 1 : -1;
         while (opModeIsActive()) {
             updateOrientation();
             double error = maintainAngle - cumulativeAngle;
@@ -151,8 +176,6 @@ public class Auto extends LinearOpMode {
             }
         }
         drive.setMotorPowers(0, 0, 0, 0);
-
-
     }
 
     private void wait(int millis) {
@@ -233,7 +256,7 @@ public class Auto extends LinearOpMode {
         int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
                 "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
-        tfodParameters.minResultConfidence = 0.80f;
+        tfodParameters.minResultConfidence = 0.70f;
         tfodParameters.isModelTensorFlow2 = true;
         tfodParameters.inputSize = 320;
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
