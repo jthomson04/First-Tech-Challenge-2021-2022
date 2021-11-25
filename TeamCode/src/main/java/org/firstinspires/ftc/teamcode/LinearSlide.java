@@ -68,4 +68,10 @@ public class LinearSlide {
         slide.setPower(slide.getCurrentPosition() > position ? -1 : 1);
         slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
+
+    public void setRotation(int position) {
+        rotator.setTargetPosition(position);
+        rotator.setPower(slide.getCurrentPosition() > position ? -0.35 : 0.35);
+        rotator.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
 }

@@ -6,13 +6,11 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
@@ -38,35 +36,75 @@ public class Auto extends LinearOpMode {
     private TFObjectDetector tfod;
     private MecanumDrive drive;
     private List<Recognition> objectRecognitions;
+
+
     private RevColorSensorV3 color;
+    BNO055IMU imu;
+    DcMotor backLeft, backRight, frontLeft, frontRight;
+    LinearSlide slide;
+    CarouselRotator rotator;
+
     @Override
     public void runOpMode() {
 
-        BNO055IMU imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
 
-        DcMotor backLeft = hardwareMap.dcMotor.get("backleft");
-        DcMotor backRight = hardwareMap.dcMotor.get("backright");
-        DcMotor frontLeft = hardwareMap.dcMotor.get("frontleft");
-        DcMotor frontRight = hardwareMap.dcMotor.get("frontright");
-        LinearSlide slide = new LinearSlide(hardwareMap.get(DcMotor.class, "linearslide"), hardwareMap.get(DcMotor.class, "rotator"), hardwareMap.get(Servo.class, "grabber"));
-        CarouselRotator rotator = new CarouselRotator(hardwareMap.get(DcMotor.class, "carousel"));
+        backLeft = hardwareMap.dcMotor.get("backleft");
+        backRight = hardwareMap.dcMotor.get("backright");
+        frontLeft = hardwareMap.dcMotor.get("frontleft");
+        frontRight = hardwareMap.dcMotor.get("frontright");
+        slide = new LinearSlide(hardwareMap.get(DcMotor.class, "linearslide"), hardwareMap.get(DcMotor.class, "rotator"), hardwareMap.get(Servo.class, "grabber"));
+        rotator = new CarouselRotator(hardwareMap.get(DcMotor.class, "carousel"));
         drive = new MecanumDrive(frontLeft, frontRight, backLeft, backRight, imu);
         color = hardwareMap.get(RevColorSensorV3.class, "color");
 
         initCV();
         waitForStart();
-        /*Initializer.initializeGrabber(slide.grabber, slide.slide, this);
-        DuckPosition duck = findDuckPosition(7000);
-        telemetry.addData("Duck Position", duck == null ? "Unknown" : duck.toString());
+        Initializer.initializeGrabber(slide.grabber, slide.slide, this);
+        DuckPosition position = searchForDuck();
+        telemetry.addData("Status", "Duck found at " + position.toString());
+        strafe(true, 1, 1000, 0);
+        waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.LEFT ? 0 : (position == DuckPosition.MIDDLE ? 300 : 500));
+        forward(0.5, 2000, 0);
+        slide.setGrabberPosition(false, true);
+        forward(-0.5, 2000, 0);
+        waitOnSlidePosition(0, 0);
+        turn(-90);
+
+    }
+
+    private DuckPosition searchForDuck() {
+        forward(0.2, 250, 0);
+        telemetry.addData("Status", "Searching for Center Duck");
         telemetry.update();
-        slide.setGrabberPosition(true, false);
-        forward(0.35, 500, 0);
-        strafe(true, 0.5, 1000, 0);*/
+        Recognition duck = waitUntilObjectFound("Duck", 2000);
+        strafe(true, 1, 500, 0);
+        if (duck != null) {
+            return DuckPosition.MIDDLE;
+        }
+        telemetry.addData("Status", "Searching for Right Duck");
+        telemetry.update();
+        duck = waitUntilObjectFound("Duck", 2000);
+        return duck != null ? DuckPosition.RIGHT : DuckPosition.LEFT;
+    }
 
 
 
+    private void waitOnSlidePosition(int lift, int rotate) {
+
+        slide.goToPosition(lift);
+        slide.setRotation(rotate);
 
 
+        while ((Math.abs(lift - slide.slide.getCurrentPosition()) > 50 || Math.abs(rotate - slide.rotator.getCurrentPosition()) > 50) && opModeIsActive()) {
+            telemetry.addData("Slide", slide.slide.getCurrentPosition());
+            telemetry.addData("Slide Target", lift);
+            telemetry.addData("Rotator", slide.rotator.getCurrentPosition());
+            telemetry.addData("Rotator Target", rotate);
+            telemetry.update();
+        }
+        slide.slide.setPower(0);
+        slide.rotator.setPower(0);
     }
 
     private double[] getColorData() {
@@ -74,31 +112,15 @@ public class Auto extends LinearOpMode {
         int green = color.green();
         int blue = color.blue();
         int total = red + green + blue;
-        return new double[] {
-                (double)red / total,
-                (double)green / total,
-                (double)blue / total,
+        return new double[]{
+                (double) red / total,
+                (double) green / total,
+                (double) blue / total,
                 color.alpha(),
                 color.getDistance(DistanceUnit.CM)
         };
     }
 
-    private DuckPosition findDuckPosition(int msTimeout) {
-        Recognition duck = waitUntilObjectFound("Duck", msTimeout);
-        if (duck == null) {
-            return null;
-        }
-        double angle = duck.estimateAngleToObject(AngleUnit.DEGREES);
-        telemetry.addData("Duck Angle", angle);
-        telemetry.update();
-        if (Math.abs(angle) < 10) {
-            return DuckPosition.MIDDLE;
-        } else if (angle < 0) {
-            return DuckPosition.LEFT;
-        } else {
-            return DuckPosition.RIGHT;
-        }
-    }
 
     private void showOrientation() {
         telemetry.addData("Orientation", cumulativeAngle);
@@ -135,9 +157,13 @@ public class Auto extends LinearOpMode {
         turn(desiredAngle, 0.8, 0.4, 0.8);
     }
 
+    private void forward(double power, int maxMillis, float maintainAngle) {
+        forward(power, maxMillis, maintainAngle, Integer.MIN_VALUE);
+    }
 
-    private void forward(double power, int millis, float maintainAngle) {
-        long endTime = SystemClock.elapsedRealtime() + millis;
+
+    private void forward(double power, int maxMillis, float maintainAngle, double distanceThreshold) {
+        long endTime = SystemClock.elapsedRealtime() + maxMillis;
         while (opModeIsActive()) {
             updateOrientation();
 
@@ -150,7 +176,7 @@ public class Auto extends LinearOpMode {
             telemetry.update();
 
             drive.setMotorPowers(power + offset, power - offset, power, power);
-            if (SystemClock.elapsedRealtime() >= endTime) {
+            if (SystemClock.elapsedRealtime() >= endTime || getColorData()[4] < distanceThreshold) {
                 break;
             }
         }
@@ -240,7 +266,7 @@ public class Auto extends LinearOpMode {
     }
 
     private void initCV() {
-        initCV(1, 16.0 / 9.0);
+        initCV(1.3, 16.0 / 9.0);
     }
 
     private void initCV(double magnification, double aspectRatio) {
