@@ -30,19 +30,17 @@ public class Auto extends LinearOpMode {
             "Marker"
     };
     private static final String VUFORIA_KEY = "AcRDh/L/////AAABmSXgpqzx70p0vDh2eqv9N6YEI6fwUF4tbXNAvrYXcMt+Zbq6qXM2z4Aq7KnWGblN2ZiCjGIpLlWeXL7IQrtvBJFzPNil285nzLsLg/KWynX1Pss7RKL7i/O4hFxsorVD/+4kMvkFMV7q1uVt4mY4d+SuChH3vAQA6t5NnVJGhh6M+eAeLcQYTF9KCkNL0xgXYeg06BPbppTydDgNRqTrsGwZgegIHutSHH89R/P1NdR9arRifjrfUtNEoIHglPMJ7Mh3PeFH3CpcTBfdgCuYcQCZb0lGAMI8v0Nlwh6lHkRmUFjQsfR+ujiiAAx0agouc2mEy1dK/lLDq34ZtcoAqNEpI1zinV8lkpVvFE3y9xL4";
+    BNO055IMU imu;
+    DcMotor backLeft, backRight, frontLeft, frontRight;
+    LinearSlide slide;
+    CarouselRotator rotator;
     private float cumulativeAngle = 0;
     private float prevAngle = 0;
     private VuforiaLocalizer vuforia;
     private TFObjectDetector tfod;
     private MecanumDrive drive;
     private List<Recognition> objectRecognitions;
-
-
     private RevColorSensorV3 color;
-    BNO055IMU imu;
-    DcMotor backLeft, backRight, frontLeft, frontRight;
-    LinearSlide slide;
-    CarouselRotator rotator;
 
     @Override
     public void runOpMode() {
@@ -63,14 +61,17 @@ public class Auto extends LinearOpMode {
         Initializer.initializeGrabber(slide.grabber, slide.slide, this);
         DuckPosition position = searchForDuck();
         telemetry.addData("Status", "Duck found at " + position.toString());
+        telemetry.update();
         strafe(true, 1, 1000, 0);
-        waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.LEFT ? 0 : (position == DuckPosition.MIDDLE ? 300 : 500));
+        waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.LEFT ? 0 : 400);
         forward(0.5, 2000, 0);
         slide.setGrabberPosition(false, true);
         forward(-0.5, 2000, 0);
         waitOnSlidePosition(0, 0);
         turn(-90);
-
+        forward(0.5, 10000, -90, 8);
+        rotator.setRotatorPower(0.2);
+        strafe(true, 0.5, 1000, -90);
     }
 
     private DuckPosition searchForDuck() {
@@ -87,7 +88,6 @@ public class Auto extends LinearOpMode {
         duck = waitUntilObjectFound("Duck", 2000);
         return duck != null ? DuckPosition.RIGHT : DuckPosition.LEFT;
     }
-
 
 
     private void waitOnSlidePosition(int lift, int rotate) {
@@ -216,7 +216,7 @@ public class Auto extends LinearOpMode {
 
     private Recognition waitUntilObjectFound(String label, long msTimeout) {
         long end = SystemClock.elapsedRealtime() + msTimeout;
-        while (true) {
+        while (opModeIsActive()) {
             updateRecognitions();
             if (objectRecognitions != null) {
                 Recognition recognition = recognitionsContainsLabel(objectRecognitions, label);
@@ -225,9 +225,10 @@ public class Auto extends LinearOpMode {
                 }
             }
             if (SystemClock.elapsedRealtime() >= end) {
-                return null;
+                break;
             }
         }
+        return null;
     }
 
     private Recognition recognitionsContainsLabel(List<Recognition> recognitions, String label) {
@@ -244,9 +245,11 @@ public class Auto extends LinearOpMode {
         telemetry.addData("processedangle", currentAngle);
         if (Math.abs(prevAngle - currentAngle) > 300) {  //checks if angle has wrapped around
             if (currentAngle < 180) { // crossed from 360 to 0
-                this.cumulativeAngle += (360 - prevAngle) + currentAngle;
+                //this.cumulativeAngle += (360 - prevAngle) + currentAngle;
+                this.cumulativeAngle += 360 + currentAngle - prevAngle;
             } else { // crossed from 0 to 360
-                this.cumulativeAngle -= (360 - currentAngle) + prevAngle;
+                //this.cumulativeAngle -= (360 - currentAngle) + prevAngle;
+                this.cumulativeAngle += currentAngle - prevAngle - 360;
             }
         } else {
             this.cumulativeAngle += currentAngle - prevAngle;
@@ -270,7 +273,7 @@ public class Auto extends LinearOpMode {
     }
 
     private void initCV(double magnification, double aspectRatio) {
-        telemetry.addData("Computer Vision", "Initializing");
+        telemetry.addData("CV", "Initializing");
         telemetry.update();
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
 
@@ -292,9 +295,8 @@ public class Auto extends LinearOpMode {
             tfod.activate();
             tfod.setZoom(magnification, aspectRatio);
         }
-        telemetry.addData("Computer Vision", "Activated");
+        telemetry.addData("CV", "Activated");
         telemetry.update();
-
     }
 
     private void updateRecognitions() {

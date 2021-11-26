@@ -61,7 +61,7 @@ public class teleOp extends LinearOpMode {
             drive.setMotorPowers(frontLeftPow, frontRightPow, backLeftPow, backRightPow);
             if (gamepad2.left_stick_y != 0) { // regular rotation mode
                 targetMode = false;
-                slide.setSlidePower(-gamepad2.left_stick_y);
+                slide.setSlidePower(-gamepad2.left_stick_y * (1 - 0.8 * gamepad2.right_trigger));
                 telemetry.addData("Slide Mode", "Normal");
             } else if (gamepad2.a) {
                 targetMode = false;
@@ -83,16 +83,15 @@ public class teleOp extends LinearOpMode {
                 telemetry.addData("Current Target", heightPresets[currentTarget]);
                 telemetry.addData("presses", presses);
             } else {
-                slide.setSlidePower(-gamepad2.left_stick_y);
+                slide.setSlidePower(-gamepad2.left_stick_y * (1 - 0.8 * gamepad2.right_trigger));
             }
             if (!gamepad2.a) {
-                slide.setRotatorPower(-gamepad2.right_stick_y * .25);
+                slide.setRotatorPower(-gamepad2.right_stick_y * .25 * (1 - 0.8 * gamepad2.right_trigger));
             }
 
 
-            rotator.setRotatorPower(-gamepad2.right_trigger + gamepad2.left_trigger);
+            rotator.setRotatorPower(gamepad2.right_bumper ? -0.2 : (gamepad2.left_bumper ? 0.2 : 0));
             slide.setGrabberPosition(gamepad2.b, gamepad2.x);
-
 
             telemetry.addData("Drive", forward);
             telemetry.addData("Strafe", strafe);
