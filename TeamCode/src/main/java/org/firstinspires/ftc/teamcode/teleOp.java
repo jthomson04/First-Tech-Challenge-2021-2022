@@ -90,7 +90,7 @@ public class teleOp extends LinearOpMode {
             }
 
 
-            rotator.setRotatorPower(gamepad2.right_bumper ? -0.2 : (gamepad2.left_bumper ? 0.2 : 0));
+            rotator.setRotatorPower((gamepad2.right_bumper ? -0.5 : (gamepad2.left_bumper ? 0.5 : 0)) * (1 - 0.8*gamepad2.right_trigger));
             slide.setGrabberPosition(gamepad2.b, gamepad2.x);
 
             telemetry.addData("Drive", forward);
@@ -112,10 +112,6 @@ public class teleOp extends LinearOpMode {
     }
 
     double toExp2(double num) {
-        int mult = 1;
-        if (num < 0) {
-            mult = -1;
-        }
-        return Math.pow(num, 2) * mult;
+        return Math.pow(num, 2) * (num > 0 ? 1 : -1);
     }
 }
