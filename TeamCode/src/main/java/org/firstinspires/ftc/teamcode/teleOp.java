@@ -10,7 +10,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 @TeleOp(name = "TeleOp")
 public class teleOp extends LinearOpMode {
-    public static final int[] heightPresets = {0, 940, 2520, 5400, 7500};
+    public static final int[] heightPresets = {0, 1100, 2800, 5500, 7500};
     private MecanumDrive drive;
     private LinearSlide slide;
     private CarouselRotator rotator;
@@ -90,7 +90,7 @@ public class teleOp extends LinearOpMode {
             }
 
 
-            rotator.setRotatorPower((gamepad2.right_bumper ? -0.5 : (gamepad2.left_bumper ? 0.5 : 0)) * (1 - 0.8*gamepad2.right_trigger));
+            rotator.setRotatorPower((gamepad2.right_bumper ? -1 : (gamepad2.left_bumper ? 1 : 0)) * (1 - 0.8*gamepad2.right_trigger));
             slide.setGrabberPosition(gamepad2.b, gamepad2.x);
 
             telemetry.addData("Drive", forward);

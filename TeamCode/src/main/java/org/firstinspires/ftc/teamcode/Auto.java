@@ -59,27 +59,30 @@ public class Auto extends LinearOpMode {
         initCV();
         waitForStart();
         Initializer.initializeGrabber(slide.grabber, slide.slide, this);
+        slide.setGrabberPosition(true, false);
         DuckPosition position = searchForDuck();
         telemetry.addData("Status", "Duck found at " + position.toString());
         telemetry.update();
-        strafe(true, 1, 1000, 0);
-        waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.LEFT ? 0 : 400);
-        forward(0.5, 2000, 0);
-        slide.setGrabberPosition(false, true);
+        strafe(true, 1, 600, 0);
+        waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), 0);
+        forward(0.3, 2650, 0);
+        wait(20000);
+        /*slide.setGrabberPosition(false, true);
         forward(-0.5, 2000, 0);
         waitOnSlidePosition(0, 0);
         turn(-90);
         forward(0.5, 10000, -90, 8);
         rotator.setRotatorPower(0.2);
-        strafe(true, 0.5, 1000, -90);
+        strafe(true, 0.5, 1000, -90);*/
     }
 
     private DuckPosition searchForDuck() {
         forward(0.2, 250, 0);
         telemetry.addData("Status", "Searching for Center Duck");
+        telemetry.addData("Orientation", cumulativeAngle);
         telemetry.update();
         Recognition duck = waitUntilObjectFound("Duck", 2000);
-        strafe(true, 1, 500, 0);
+        strafe(true, 1, 600, 0);
         if (duck != null) {
             return DuckPosition.MIDDLE;
         }
