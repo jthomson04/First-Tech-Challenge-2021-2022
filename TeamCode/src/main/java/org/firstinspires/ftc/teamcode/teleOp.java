@@ -10,7 +10,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 @TeleOp(name = "TeleOp")
 public class teleOp extends LinearOpMode {
-    public static final int[] heightPresets = {0, 1100, 2800, 5500, 7500};
+    public static final int[] heightPresets = {0, 1300, 3050, 5500, 7500};
     private MecanumDrive drive;
     private LinearSlide slide;
     private CarouselRotator rotator;

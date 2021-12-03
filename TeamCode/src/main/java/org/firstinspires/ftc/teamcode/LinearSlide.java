@@ -59,7 +59,7 @@ public class LinearSlide {
 
     public void setGrabberPosition(boolean close, boolean open) {
         if (open || close) {
-            grabber.setPosition(close ? 1 : 0.45);
+            grabber.setPosition(close ? 1 : 0.6);
         }
     }
 

@@ -64,14 +64,22 @@ public class Auto extends LinearOpMode {
         telemetry.addData("Status", "Duck found at " + position.toString());
         telemetry.update();
         strafe(true, 1, 600, 0);
-        waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), 0);
-        forward(0.3, 2650, 0);
-        wait(20000);
-        /*slide.setGrabberPosition(false, true);
-        forward(-0.5, 2000, 0);
+        waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.RIGHT ? 300 : 0);
+        forward(0.3, 2350, 0);
+        slide.setGrabberPosition(false, true);
+        forward(-0.3, 1600, 0);
         waitOnSlidePosition(0, 0);
         turn(-90);
+        slide.grabber.setPosition(0.3);
         forward(0.5, 10000, -90, 8);
+        forward(-0.1, 550, -90);
+        strafe(false, 0.2, 750, -90);
+        rotator.setRotatorPower(0.8);
+        wait(3000);
+        rotator.setRotatorPower(0);
+        strafe(true, 0.325, 2600, -90);
+        forward(0.3, 10000, -90, 5);
+        /*wait(20000);
         rotator.setRotatorPower(0.2);
         strafe(true, 0.5, 1000, -90);*/
     }
@@ -81,14 +89,14 @@ public class Auto extends LinearOpMode {
         telemetry.addData("Status", "Searching for Center Duck");
         telemetry.addData("Orientation", cumulativeAngle);
         telemetry.update();
-        Recognition duck = waitUntilObjectFound("Duck", 2000);
-        strafe(true, 1, 600, 0);
+        Recognition duck = waitUntilObjectFound("Duck", 1000);
+        strafe(true, 1, 570, 0);
         if (duck != null) {
             return DuckPosition.MIDDLE;
         }
         telemetry.addData("Status", "Searching for Right Duck");
         telemetry.update();
-        duck = waitUntilObjectFound("Duck", 2000);
+        duck = waitUntilObjectFound("Duck", 1000);
         return duck != null ? DuckPosition.RIGHT : DuckPosition.LEFT;
     }
 
@@ -192,7 +200,7 @@ public class Auto extends LinearOpMode {
         while (opModeIsActive()) {
             updateOrientation();
             double error = maintainAngle - cumulativeAngle;
-            double offset = error * 0.01;
+            double offset = error * 0.07;
             showOrientation();
             telemetry.addData("Power Offset", offset);
             telemetry.addData("Time Remaining", endTime - SystemClock.elapsedRealtime());
