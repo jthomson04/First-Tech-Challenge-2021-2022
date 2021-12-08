@@ -22,10 +22,5 @@ public class Initializer {
         linearSlide.setPower(0);
         opMode.telemetry.addData("done lifting", "true");
         opMode.telemetry.update();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 }

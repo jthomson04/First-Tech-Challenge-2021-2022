@@ -19,8 +19,8 @@ import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import java.util.List;
 
 
-@Autonomous(name = "Auto", group = "Autonomous")
-public class Auto extends LinearOpMode {
+@Autonomous(name = "AutoTest", group = "Autonomous")
+public class AutoTest extends LinearOpMode {
 
     private static final String TENSORFLOW_ASSET_NAME = "FreightFrenzy_BCDM.tflite";
     private static final String[] LABELS = {
@@ -55,33 +55,9 @@ public class Auto extends LinearOpMode {
         rotator = new CarouselRotator(hardwareMap.get(DcMotor.class, "carousel"));
         drive = new MecanumDrive(frontLeft, frontRight, backLeft, backRight, imu);
         color = hardwareMap.get(RevColorSensorV3.class, "color");
-
-        initCV();
         waitForStart();
-        Initializer.initializeGrabber(slide.grabber, slide.slide, this);
-        slide.setGrabberPosition(true, false);
-        DuckPosition position = searchForDuck();
-        telemetry.addData("Status", "Duck found at " + position.toString());
-        telemetry.update();
-        strafe(true, 1, 630, 0);
-        waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.RIGHT ? 300 : 0);
-        forward(0.3, 2350, 0);
-        slide.setGrabberPosition(false, true);
-        forward(-0.3, 1600, 0);
-        waitOnSlidePosition(0, 0);
-        turn(-90);
-        slide.grabber.setPosition(0.3);
-        forward(0.5, 10000, -90, 8);
-        forward(-0.1, 550, -90);
-        strafe(false, 0.2, 750, -90);
-        rotator.setRotatorPower(0.8);
-        wait(3000);
-        rotator.setRotatorPower(0);
-        strafe(true, 0.3, 2600, -90);
-        forward(0.28, 10000, -90, 5);
-        /*wait(20000);
-        rotator.setRotatorPower(0.2);
-        strafe(true, 0.5, 1000, -90);*/
+        forward(0.25, 10000, 0);
+
     }
 
     private DuckPosition searchForDuck() {
@@ -179,7 +155,7 @@ public class Auto extends LinearOpMode {
             updateOrientation();
 
             double error = maintainAngle - cumulativeAngle;
-            double offset = error * 0.01;
+            double offset = power * error * 0.1;
 
             showOrientation();
             telemetry.addData("Power Offset", offset);
@@ -200,7 +176,7 @@ public class Auto extends LinearOpMode {
         while (opModeIsActive()) {
             updateOrientation();
             double error = maintainAngle - cumulativeAngle;
-            double offset = error * 0.07;
+            double offset = error * 0.1;
             showOrientation();
             telemetry.addData("Power Offset", offset);
             telemetry.addData("Time Remaining", endTime - SystemClock.elapsedRealtime());

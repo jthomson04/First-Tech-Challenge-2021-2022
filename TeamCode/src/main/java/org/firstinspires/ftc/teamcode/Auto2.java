@@ -19,8 +19,8 @@ import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import java.util.List;
 
 
-@Autonomous(name = "Auto", group = "Autonomous")
-public class Auto extends LinearOpMode {
+@Autonomous(name = "Auto2", group = "Autonomous")
+public class Auto2 extends LinearOpMode {
 
     private static final String TENSORFLOW_ASSET_NAME = "FreightFrenzy_BCDM.tflite";
     private static final String[] LABELS = {
@@ -63,23 +63,36 @@ public class Auto extends LinearOpMode {
         DuckPosition position = searchForDuck();
         telemetry.addData("Status", "Duck found at " + position.toString());
         telemetry.update();
-        strafe(true, 1, 630, 0);
+        strafe(true, 1, 640, 0);
         waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.RIGHT ? 300 : 0);
-        forward(0.3, 2350, 0);
+        forward(0.6, 1175, 0);
         slide.setGrabberPosition(false, true);
-        forward(-0.3, 1600, 0);
-        waitOnSlidePosition(0, 0);
+        //waitOnSlidePosition(0, 0);
+
+        forward(-0.6, 800, 0);
+        slide.goDown();
+
         turn(-90);
-        slide.grabber.setPosition(0.3);
-        forward(0.5, 10000, -90, 8);
-        forward(-0.1, 550, -90);
-        strafe(false, 0.2, 750, -90);
+        forward(0.75, 10000, -90, 8);
+        forward(-0.1, 750, -90);
+        strafe(false, 0.35, 900, -90);
         rotator.setRotatorPower(0.8);
         wait(3000);
         rotator.setRotatorPower(0);
-        strafe(true, 0.3, 2600, -90);
+        strafe(true, 1, 350, -90);
+        slide.grabber.setPosition(0.6);
+        slide.goToPosition(1500);
+        forward(-1, 500, -90);
+        turn(90);
+        strafe(false, 1, 350, 90);
+        forward(1, 4500, 90, 5);
+        forward(-0.2, 1000, 90);
+        slide.setGrabberPosition(false, true);
+        slide.goDown();
+        wait(2000);
+        /*strafe(true, 0.3, 2600, -90);
         forward(0.28, 10000, -90, 5);
-        /*wait(20000);
+        wait(20000);
         rotator.setRotatorPower(0.2);
         strafe(true, 0.5, 1000, -90);*/
     }
@@ -90,7 +103,7 @@ public class Auto extends LinearOpMode {
         telemetry.addData("Orientation", cumulativeAngle);
         telemetry.update();
         Recognition duck = waitUntilObjectFound("Duck", 2000);
-        strafe(true, 1, 570, 0);
+        strafe(true, 1, 635, 0);
         if (duck != null) {
             return DuckPosition.MIDDLE;
         }
@@ -179,7 +192,7 @@ public class Auto extends LinearOpMode {
             updateOrientation();
 
             double error = maintainAngle - cumulativeAngle;
-            double offset = error * 0.01;
+            double offset = power * error * 0.1;
 
             showOrientation();
             telemetry.addData("Power Offset", offset);
@@ -200,7 +213,7 @@ public class Auto extends LinearOpMode {
         while (opModeIsActive()) {
             updateOrientation();
             double error = maintainAngle - cumulativeAngle;
-            double offset = error * 0.07;
+            double offset = power * error * 0.1;
             showOrientation();
             telemetry.addData("Power Offset", offset);
             telemetry.addData("Time Remaining", endTime - SystemClock.elapsedRealtime());
