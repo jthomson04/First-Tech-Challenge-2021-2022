@@ -22,25 +22,29 @@ import java.util.List;
 @Autonomous(name = "Auto", group = "Autonomous")
 public class Auto extends LinearOpMode {
 
-    private static final String TENSORFLOW_ASSET_NAME = "FreightFrenzy_BCDM.tflite";
-    private static final String[] LABELS = {
+    private static final String TENSORFLOW_ASSET_NAME = "FreightFrenzy_BCDM.tflite"; // name of presaved bundle tflite model
+    private static final String[] LABELS = { // labels for tflite model
             "Ball",
             "Cube",
             "Duck",
             "Marker"
     };
     private static final String VUFORIA_KEY = "AcRDh/L/////AAABmSXgpqzx70p0vDh2eqv9N6YEI6fwUF4tbXNAvrYXcMt+Zbq6qXM2z4Aq7KnWGblN2ZiCjGIpLlWeXL7IQrtvBJFzPNil285nzLsLg/KWynX1Pss7RKL7i/O4hFxsorVD/+4kMvkFMV7q1uVt4mY4d+SuChH3vAQA6t5NnVJGhh6M+eAeLcQYTF9KCkNL0xgXYeg06BPbppTydDgNRqTrsGwZgegIHutSHH89R/P1NdR9arRifjrfUtNEoIHglPMJ7Mh3PeFH3CpcTBfdgCuYcQCZb0lGAMI8v0Nlwh6lHkRmUFjQsfR+ujiiAAx0agouc2mEy1dK/lLDq34ZtcoAqNEpI1zinV8lkpVvFE3y9xL4";
-    BNO055IMU imu;
+    BNO055IMU imu; //gyro
     DcMotor backLeft, backRight, frontLeft, frontRight;
     LinearSlide slide;
     CarouselRotator rotator;
+    private MecanumDrive drive;
+    private RevColorSensorV3 color;
+
     private float cumulativeAngle = 0;
     private float prevAngle = 0;
+
     private VuforiaLocalizer vuforia;
     private TFObjectDetector tfod;
-    private MecanumDrive drive;
+
     private List<Recognition> objectRecognitions;
-    private RevColorSensorV3 color;
+
 
     @Override
     public void runOpMode() {
@@ -63,34 +67,56 @@ public class Auto extends LinearOpMode {
         DuckPosition position = searchForDuck();
         telemetry.addData("Status", "Duck found at " + position.toString());
         telemetry.update();
-        strafe(true, 1, 630, 0);
+        strafe(true, 1, 640, 0);
         waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.RIGHT ? 300 : 0);
-        forward(0.3, 2350, 0);
+        forward(0.6, 1175, 0);
         slide.setGrabberPosition(false, true);
-        forward(-0.3, 1600, 0);
-        waitOnSlidePosition(0, 0);
+
+
+        forward(-0.6, 800, 0);
+        slide.goDown();
+
         turn(-90);
-        slide.grabber.setPosition(0.3);
-        forward(0.5, 10000, -90, 8);
-        forward(-0.1, 550, -90);
-        strafe(false, 0.2, 750, -90);
+        forward(0.75, 10000, -90, 8);
+        forward(-0.1, 750, -90);
+        strafe(false, 0.35, 900, -90);
         rotator.setRotatorPower(0.8);
         wait(3000);
         rotator.setRotatorPower(0);
-        strafe(true, 0.3, 2600, -90);
+        strafe(true, 1, 350, -90);
+        slide.grabber.setPosition(0.6);
+        slide.goToPosition(1500);
+        forward(-1, 500, -90);
+        turn(90);
+        strafe(false, 1, 350, 90);
+        forward(1, 4500, 90, 5);
+        forward(-0.2, 1000, 90);
+        slide.setGrabberPosition(false, true);
+        slide.goDown();
+        wait(2000);
+        /*strafe(true, 0.3, 2600, -90);
         forward(0.28, 10000, -90, 5);
-        /*wait(20000);
+        wait(20000);
         rotator.setRotatorPower(0.2);
         strafe(true, 0.5, 1000, -90);*/
     }
 
     private DuckPosition searchForDuck() {
+        /*
+        find the duck!
+        relies on webcam alignment with center barcode
+        Process:
+        1. Check if the duck is in the center position
+        2. If not found, check the right position
+        3. If not found, assume the duck is on the left
+         */
+
         forward(0.2, 250, 0);
         telemetry.addData("Status", "Searching for Center Duck");
         telemetry.addData("Orientation", cumulativeAngle);
         telemetry.update();
         Recognition duck = waitUntilObjectFound("Duck", 2000);
-        strafe(true, 1, 570, 0);
+        strafe(true, 1, 635, 0);
         if (duck != null) {
             return DuckPosition.MIDDLE;
         }
@@ -102,11 +128,13 @@ public class Auto extends LinearOpMode {
 
 
     private void waitOnSlidePosition(int lift, int rotate) {
-
+        /*
+        Synchronously rotates the slide to the desired position
+         */
         slide.goToPosition(lift);
         slide.setRotation(rotate);
 
-
+        // stays in loop while the slide is approaching the target position
         while ((Math.abs(lift - slide.slide.getCurrentPosition()) > 50 || Math.abs(rotate - slide.rotator.getCurrentPosition()) > 50) && opModeIsActive()) {
             telemetry.addData("Slide", slide.slide.getCurrentPosition());
             telemetry.addData("Slide Target", lift);
@@ -119,6 +147,9 @@ public class Auto extends LinearOpMode {
     }
 
     private double[] getColorData() {
+        /*
+        Get the color data from the RevV3 Color Sensor, applying softmax to rgb
+         */
         int red = color.red();
         int green = color.green();
         int blue = color.blue();
@@ -137,17 +168,25 @@ public class Auto extends LinearOpMode {
         telemetry.addData("Orientation", cumulativeAngle);
     }
 
+    private void turn(double desiredAngle) {
+        turn(desiredAngle, 0.8, 0.4, 0.8);
+    }
+
     private void turn(double desiredAngle, double turnPower, double closeRangePower, double slowDownCutoff) {
         // gyroscopic turning for autonomous
         updateOrientation();
         float initialAngle = cumulativeAngle;
 
+        // determines the direction needed to turn
         boolean right = desiredAngle > cumulativeAngle;
 
         float turningMultiplier = right ? -1 : 1;
 
         while (opModeIsActive()) {
             updateOrientation();
+            /*
+            Decreases turning power as the bot gets closer to the desired angle
+             */
             double percentageThrough = mapValue(cumulativeAngle, initialAngle, desiredAngle, 0, 1);
             double power = percentageThrough > slowDownCutoff ? closeRangePower : turnPower;
 
@@ -164,22 +203,18 @@ public class Auto extends LinearOpMode {
         drive.setMotorPowers(0, 0, 0, 0);
     }
 
-    private void turn(double desiredAngle) {
-        turn(desiredAngle, 0.8, 0.4, 0.8);
-    }
 
     private void forward(double power, int maxMillis, float maintainAngle) {
         forward(power, maxMillis, maintainAngle, Integer.MIN_VALUE);
     }
 
-
     private void forward(double power, int maxMillis, float maintainAngle, double distanceThreshold) {
         long endTime = SystemClock.elapsedRealtime() + maxMillis;
         while (opModeIsActive()) {
             updateOrientation();
-
+            // determines how far off from desired angle the robot is, and computes adjustment factor for motors
             double error = maintainAngle - cumulativeAngle;
-            double offset = error * 0.01;
+            double offset = power * error * 0.1;
 
             showOrientation();
             telemetry.addData("Power Offset", offset);
@@ -187,6 +222,8 @@ public class Auto extends LinearOpMode {
             telemetry.update();
 
             drive.setMotorPowers(power + offset, power - offset, power, power);
+
+            // checks that the mas time hasn't elapsed and that the distance measurement is above the threshold
             if (SystemClock.elapsedRealtime() >= endTime || getColorData()[4] < distanceThreshold) {
                 break;
             }
@@ -195,12 +232,13 @@ public class Auto extends LinearOpMode {
     }
 
     private void strafe(boolean right, double power, int millis, float maintainAngle) {
+        // gyroscopically-assisted strafing
         long endTime = SystemClock.elapsedRealtime() + millis;
         int mult = right ? 1 : -1;
         while (opModeIsActive()) {
             updateOrientation();
             double error = maintainAngle - cumulativeAngle;
-            double offset = error * 0.07;
+            double offset = power * error * 0.1;
             showOrientation();
             telemetry.addData("Power Offset", offset);
             telemetry.addData("Time Remaining", endTime - SystemClock.elapsedRealtime());
@@ -216,6 +254,11 @@ public class Auto extends LinearOpMode {
     }
 
     private void wait(int millis) {
+        /*
+        Waits for the specified amount of time
+        Can't use Thread.sleep because the robotcontroller freaks out
+        Horrifically inefficient but it gets the job done
+         */
         long initTime = SystemClock.elapsedRealtime();
         long endTime = initTime + millis;
         while (opModeIsActive()) {
@@ -223,9 +266,14 @@ public class Auto extends LinearOpMode {
                 break;
             }
         }
+
     }
 
     private Recognition waitUntilObjectFound(String label, long msTimeout) {
+        /*
+        Waits for the tflite model to detect an object of the specified type
+        If not found within the time frame, returns null
+         */
         long end = SystemClock.elapsedRealtime() + msTimeout;
         while (opModeIsActive()) {
             updateRecognitions();
@@ -252,6 +300,11 @@ public class Auto extends LinearOpMode {
     }
 
     private void updateOrientation() {
+        /*
+        Acts as an accumulation function for the imu
+        Rev IMU outputs position as a discrete range from -180 to 180
+        This gets mapped to 0 to 360, which can then be used to compute the overall cumulative angle
+         */
         float currentAngle = processAngle(drive.getOrientation().thirdAngle);
         telemetry.addData("processedangle", currentAngle);
         if (Math.abs(prevAngle - currentAngle) > 300) {  //checks if angle has wrapped around
@@ -270,6 +323,7 @@ public class Auto extends LinearOpMode {
 
 
     private float processAngle(float angle) {
+        // maps angle from -180 to 180 to 0 to 360
         angle = angle * -1;
         return (angle < 0) ? angle + 360 : angle;
     }
@@ -284,24 +338,28 @@ public class Auto extends LinearOpMode {
     }
 
     private void initCV(double magnification, double aspectRatio) {
+        /*
+        Initializes computer vision for duck detection
+         */
         telemetry.addData("CV", "Initializing");
         telemetry.update();
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
 
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
-        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam");
+        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam"); // configures usb2 webcam
 
         vuforia = ClassFactory.getInstance().createVuforia(parameters);
 
         int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
                 "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
-        tfodParameters.minResultConfidence = 0.70f;
+        tfodParameters.minResultConfidence = 0.70f; // will only output result if more than 70% sure
         tfodParameters.isModelTensorFlow2 = true;
         tfodParameters.inputSize = 320;
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
-        tfod.loadModelFromAsset(TENSORFLOW_ASSET_NAME, LABELS);
+        tfod.loadModelFromAsset(TENSORFLOW_ASSET_NAME, LABELS); // loads model
 
+        // check if model was loaded successfully
         if (tfod != null) {
             tfod.activate();
             tfod.setZoom(magnification, aspectRatio);
@@ -311,6 +369,7 @@ public class Auto extends LinearOpMode {
     }
 
     private void updateRecognitions() {
+        // updates list of tfod recognitions
         if (tfod != null) {
             List<Recognition> currentRecognitions = tfod.getUpdatedRecognitions();
             if (currentRecognitions != null) {

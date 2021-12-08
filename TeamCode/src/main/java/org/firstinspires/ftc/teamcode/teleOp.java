@@ -24,7 +24,7 @@ public class teleOp extends LinearOpMode {
         DcMotor backLeft = hardwareMap.get(DcMotor.class, "backleft");
         DcMotor backRight = hardwareMap.get(DcMotor.class, "backright");
         BNO055IMU imu = hardwareMap.get(BNO055IMU.class, "imu");
-        int presses = 0;
+        int dpadPresses = 0;
         drive = new MecanumDrive(frontLeft, frontRight, backLeft, backRight, imu);
 
         slide = new LinearSlide(hardwareMap.get(DcMotor.class, "linearslide"), hardwareMap.get(DcMotor.class, "rotator"), hardwareMap.get(Servo.class, "grabber"));
@@ -72,7 +72,7 @@ public class teleOp extends LinearOpMode {
                 if ((gamepad2.dpad_up || gamepad2.dpad_down) && !previouslyUpDownPressed && System.currentTimeMillis() - prevPress > 200) {
                     previouslyUpDownPressed = true;
                     currentTarget = Math.max(currentTarget + (gamepad2.dpad_up ? 1 : -1), 0) % heightPresets.length;
-                    presses += 1;
+                    dpadPresses += 1;
                     prevPress = System.currentTimeMillis();
                 } else {
                     previouslyUpDownPressed = false;
@@ -81,7 +81,7 @@ public class teleOp extends LinearOpMode {
                 telemetry.addData("Slide Mode", "Run to Position");
                 telemetry.addData("PreviousPress", previouslyUpDownPressed);
                 telemetry.addData("Current Target", heightPresets[currentTarget]);
-                telemetry.addData("presses", presses);
+                telemetry.addData("dpadPresses", dpadPresses);
             } else {
                 slide.setSlidePower(-gamepad2.left_stick_y * (1 - 0.8 * gamepad2.right_trigger));
             }
