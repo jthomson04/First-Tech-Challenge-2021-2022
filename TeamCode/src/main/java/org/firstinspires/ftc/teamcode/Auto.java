@@ -30,15 +30,14 @@ public class Auto extends LinearOpMode {
             "Marker"
     };
     private static final String VUFORIA_KEY = "AcRDh/L/////AAABmSXgpqzx70p0vDh2eqv9N6YEI6fwUF4tbXNAvrYXcMt+Zbq6qXM2z4Aq7KnWGblN2ZiCjGIpLlWeXL7IQrtvBJFzPNil285nzLsLg/KWynX1Pss7RKL7i/O4hFxsorVD/+4kMvkFMV7q1uVt4mY4d+SuChH3vAQA6t5NnVJGhh6M+eAeLcQYTF9KCkNL0xgXYeg06BPbppTydDgNRqTrsGwZgegIHutSHH89R/P1NdR9arRifjrfUtNEoIHglPMJ7Mh3PeFH3CpcTBfdgCuYcQCZb0lGAMI8v0Nlwh6lHkRmUFjQsfR+ujiiAAx0agouc2mEy1dK/lLDq34ZtcoAqNEpI1zinV8lkpVvFE3y9xL4";
-    BNO055IMU imu; //gyro
+    private AutoDrive autoDrive;
+
     DcMotor backLeft, backRight, frontLeft, frontRight;
     LinearSlide slide;
     CarouselRotator rotator;
     private MecanumDrive drive;
     private RevColorSensorV3 color;
 
-    private float cumulativeAngle = 0;
-    private float prevAngle = 0;
 
     private VuforiaLocalizer vuforia;
     private TFObjectDetector tfod;
@@ -46,19 +45,23 @@ public class Auto extends LinearOpMode {
     private List<Recognition> objectRecognitions;
 
 
+
+
     @Override
     public void runOpMode() {
 
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        BNO055IMU imu = hardwareMap.get(BNO055IMU.class, "imu");
 
         backLeft = hardwareMap.dcMotor.get("backleft");
         backRight = hardwareMap.dcMotor.get("backright");
         frontLeft = hardwareMap.dcMotor.get("frontleft");
         frontRight = hardwareMap.dcMotor.get("frontright");
+        color = hardwareMap.get(RevColorSensorV3.class, "color");
+        autoDrive = new AutoDrive(new MecanumDrive(frontLeft, frontRight, backLeft, backRight, imu), color, this);
+
         slide = new LinearSlide(hardwareMap.get(DcMotor.class, "linearslide"), hardwareMap.get(DcMotor.class, "rotator"), hardwareMap.get(Servo.class, "grabber"));
         rotator = new CarouselRotator(hardwareMap.get(DcMotor.class, "carousel"));
-        drive = new MecanumDrive(frontLeft, frontRight, backLeft, backRight, imu);
-        color = hardwareMap.get(RevColorSensorV3.class, "color");
+
 
         initCV();
         waitForStart();
@@ -67,30 +70,30 @@ public class Auto extends LinearOpMode {
         DuckPosition position = searchForDuck();
         telemetry.addData("Status", "Duck found at " + position.toString());
         telemetry.update();
-        strafe(true, 1, 640, 0);
+        autoDrive.strafe(true, 1, 640, 0);
         waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.RIGHT ? 300 : 0);
-        forward(0.6, 1175, 0);
+        autoDrive.forward(0.6, 1175, 0);
         slide.setGrabberPosition(false, true);
 
 
-        forward(-0.6, 800, 0);
+        autoDrive.forward(-0.6, 800, 0);
         slide.goDown();
 
-        turn(-90);
-        forward(0.75, 10000, -90, 8);
-        forward(-0.1, 750, -90);
-        strafe(false, 0.35, 900, -90);
+        autoDrive.turn(-90);
+        autoDrive.forward(0.75, 10000, -90, 8);
+        autoDrive.forward(-0.1, 750, -90);
+        autoDrive.strafe(false, 0.35, 900, -90);
         rotator.setRotatorPower(0.8);
         wait(3000);
         rotator.setRotatorPower(0);
-        strafe(true, 1, 350, -90);
+        autoDrive.strafe(true, 1, 350, -90);
         slide.grabber.setPosition(0.6);
         slide.goToPosition(1500);
-        forward(-1, 500, -90);
-        turn(90);
-        strafe(false, 1, 350, 90);
-        forward(1, 4500, 90, 5);
-        forward(-0.2, 1000, 90);
+        autoDrive.forward(-1, 500, -90);
+        autoDrive.turn(90);
+        autoDrive.strafe(false, 1, 350, 90);
+        autoDrive.forward(1, 4500, 90, 5);
+        autoDrive.forward(-0.2, 1000, 90);
         slide.setGrabberPosition(false, true);
         slide.goDown();
         wait(2000);
@@ -111,12 +114,11 @@ public class Auto extends LinearOpMode {
         3. If not found, assume the duck is on the left
          */
 
-        forward(0.2, 250, 0);
+        autoDrive.forward(0.2, 250, 0);
         telemetry.addData("Status", "Searching for Center Duck");
-        telemetry.addData("Orientation", cumulativeAngle);
         telemetry.update();
         Recognition duck = waitUntilObjectFound("Duck", 2000);
-        strafe(true, 1, 635, 0);
+        autoDrive.strafe(true, 1, 635, 0);
         if (duck != null) {
             return DuckPosition.MIDDLE;
         }
@@ -164,94 +166,12 @@ public class Auto extends LinearOpMode {
     }
 
 
-    private void showOrientation() {
-        telemetry.addData("Orientation", cumulativeAngle);
-    }
-
-    private void turn(double desiredAngle) {
-        turn(desiredAngle, 0.8, 0.4, 0.8);
-    }
-
-    private void turn(double desiredAngle, double turnPower, double closeRangePower, double slowDownCutoff) {
-        // gyroscopic turning for autonomous
-        updateOrientation();
-        float initialAngle = cumulativeAngle;
-
-        // determines the direction needed to turn
-        boolean right = desiredAngle > cumulativeAngle;
-
-        float turningMultiplier = right ? -1 : 1;
-
-        while (opModeIsActive()) {
-            updateOrientation();
-            /*
-            Decreases turning power as the bot gets closer to the desired angle
-             */
-            double percentageThrough = mapValue(cumulativeAngle, initialAngle, desiredAngle, 0, 1);
-            double power = percentageThrough > slowDownCutoff ? closeRangePower : turnPower;
-
-            showOrientation();
-            telemetry.addData("Power", power);
-            telemetry.addData("Percentage Through Turn", percentageThrough);
-            telemetry.update();
-
-            drive.setMotorPowers(power * -1 * turningMultiplier, power * turningMultiplier, power * -1 * turningMultiplier, power * turningMultiplier);
-            if (Math.abs(desiredAngle - cumulativeAngle) < 2) {
-                break;
-            }
-        }
-        drive.setMotorPowers(0, 0, 0, 0);
-    }
 
 
-    private void forward(double power, int maxMillis, float maintainAngle) {
-        forward(power, maxMillis, maintainAngle, Integer.MIN_VALUE);
-    }
 
-    private void forward(double power, int maxMillis, float maintainAngle, double distanceThreshold) {
-        long endTime = SystemClock.elapsedRealtime() + maxMillis;
-        while (opModeIsActive()) {
-            updateOrientation();
-            // determines how far off from desired angle the robot is, and computes adjustment factor for motors
-            double error = maintainAngle - cumulativeAngle;
-            double offset = power * error * 0.1;
 
-            showOrientation();
-            telemetry.addData("Power Offset", offset);
-            telemetry.addData("Time Remaining", endTime - SystemClock.elapsedRealtime());
-            telemetry.update();
 
-            drive.setMotorPowers(power + offset, power - offset, power, power);
 
-            // checks that the mas time hasn't elapsed and that the distance measurement is above the threshold
-            if (SystemClock.elapsedRealtime() >= endTime || getColorData()[4] < distanceThreshold) {
-                break;
-            }
-        }
-        drive.setMotorPowers(0, 0, 0, 0);
-    }
-
-    private void strafe(boolean right, double power, int millis, float maintainAngle) {
-        // gyroscopically-assisted strafing
-        long endTime = SystemClock.elapsedRealtime() + millis;
-        int mult = right ? 1 : -1;
-        while (opModeIsActive()) {
-            updateOrientation();
-            double error = maintainAngle - cumulativeAngle;
-            double offset = power * error * 0.1;
-            showOrientation();
-            telemetry.addData("Power Offset", offset);
-            telemetry.addData("Time Remaining", endTime - SystemClock.elapsedRealtime());
-            telemetry.update();
-
-            drive.setMotorPowers(power * mult + offset, -power * mult - offset, -power * mult + offset, power * mult - offset);
-
-            if (SystemClock.elapsedRealtime() >= endTime) {
-                break;
-            }
-        }
-        drive.setMotorPowers(0, 0, 0, 0);
-    }
 
     private void wait(int millis) {
         /*
@@ -299,39 +219,12 @@ public class Auto extends LinearOpMode {
         return null;
     }
 
-    private void updateOrientation() {
-        /*
-        Acts as an accumulation function for the imu
-        Rev IMU outputs position as a discrete range from -180 to 180
-        This gets mapped to 0 to 360, which can then be used to compute the overall cumulative angle
-         */
-        float currentAngle = processAngle(drive.getOrientation().thirdAngle);
-        telemetry.addData("processedangle", currentAngle);
-        if (Math.abs(prevAngle - currentAngle) > 300) {  //checks if angle has wrapped around
-            if (currentAngle < 180) { // crossed from 360 to 0
-                //this.cumulativeAngle += (360 - prevAngle) + currentAngle;
-                this.cumulativeAngle += 360 + currentAngle - prevAngle;
-            } else { // crossed from 0 to 360
-                //this.cumulativeAngle -= (360 - currentAngle) + prevAngle;
-                this.cumulativeAngle += currentAngle - prevAngle - 360;
-            }
-        } else {
-            this.cumulativeAngle += currentAngle - prevAngle;
-        }
-        this.prevAngle = currentAngle;
-    }
 
 
-    private float processAngle(float angle) {
-        // maps angle from -180 to 180 to 0 to 360
-        angle = angle * -1;
-        return (angle < 0) ? angle + 360 : angle;
-    }
 
-    // from https://stackoverflow.com/questions/7505991/arduino-map-equivalent-function-in-java
-    double mapValue(double x, double in_min, double in_max, double out_min, double out_max) {
-        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-    }
+
+
+
 
     private void initCV() {
         initCV(1.3, 16.0 / 9.0);
