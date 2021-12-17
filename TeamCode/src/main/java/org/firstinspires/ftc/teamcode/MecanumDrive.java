@@ -3,7 +3,9 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Gamepad;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
@@ -46,6 +48,34 @@ public class MecanumDrive {
         this.frontRight.setPower(frontRight);
         this.backLeft.setPower(backLeft);
         this.backRight.setPower(backRight);
+    }
+
+    private double toExp2(double num) {
+        return Math.pow(num, 2) * (num > 0 ? 1 : -1);
+    }
+
+    public void control(Gamepad gamepad, Telemetry telemetry) {
+        double modifier = 1 - 0.8 * gamepad.right_trigger;
+
+        double forward = toExp2(-gamepad.left_stick_y);
+        double strafe = toExp2(gamepad.left_stick_x);
+        double rotate = toExp2(gamepad.right_stick_x);
+
+        double frontLeftPow = (forward + strafe + rotate) * modifier;
+        double backLeftPow = (forward - strafe + rotate) * modifier;
+        double frontRightPow = (forward - strafe - rotate) * modifier;
+        double backRightPow = (forward + strafe - rotate) * modifier;
+
+        setMotorPowers(frontLeftPow, frontRightPow, backLeftPow, backRightPow);
+        telemetry.addData("Drive", forward);
+        telemetry.addData("Strafe", strafe);
+        telemetry.addData("Rotate", rotate);
+
+        Orientation orientation = getOrientation();
+        telemetry.addData("X", orientation.firstAngle);
+        telemetry.addData("Y", orientation.secondAngle);
+        telemetry.addData("Z", orientation.thirdAngle);
+
     }
 
 }

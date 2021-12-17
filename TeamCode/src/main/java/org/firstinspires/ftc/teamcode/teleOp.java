@@ -11,9 +11,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 @TeleOp(name = "TeleOp")
 public class teleOp extends LinearOpMode {
     public static final int[] heightPresets = {0, 1300, 3050, 5500, 7500};
-    private MecanumDrive drive;
-    private LinearSlide slide;
-    private CarouselRotator rotator;
     private int currentTarget = 0;
 
 
@@ -25,40 +22,28 @@ public class teleOp extends LinearOpMode {
         DcMotor backRight = hardwareMap.get(DcMotor.class, "backright");
         BNO055IMU imu = hardwareMap.get(BNO055IMU.class, "imu");
         int dpadPresses = 0;
-        drive = new MecanumDrive(frontLeft, frontRight, backLeft, backRight, imu);
 
-        slide = new LinearSlide(hardwareMap.get(DcMotor.class, "linearslide"), hardwareMap.get(DcMotor.class, "rotator"), hardwareMap.get(Servo.class, "grabber"));
+        MecanumDrive drive = new MecanumDrive(frontLeft, frontRight, backLeft, backRight, imu);
 
-        rotator = new CarouselRotator(hardwareMap.get(DcMotor.class, "carousel"));
+        LinearSlide slide = new LinearSlide(hardwareMap.get(DcMotor.class, "linearslide"), hardwareMap.get(DcMotor.class, "rotator"), hardwareMap.get(Servo.class, "grabber"));
 
-
-        double forward;
-        double strafe;
-        double rotate;
-        double modifier;
+        CarouselRotator rotator = new CarouselRotator(hardwareMap.get(DcMotor.class, "carousel"));
 
         boolean targetMode = false;
         boolean prevTargetMode;
         boolean previouslyUpDownPressed = false;
 
+
+
         waitForStart();
 
         long prevPress = 0;
         while (opModeIsActive()) {
+            drive.control(gamepad1, telemetry);
+
             prevTargetMode = targetMode;
             targetMode = gamepad2.dpad_up || gamepad2.dpad_down || prevTargetMode;
-            modifier = 1 - 0.8 * gamepad1.right_trigger;
 
-            forward = toExp2(-gamepad1.left_stick_y);
-            strafe = toExp2(gamepad1.left_stick_x);
-            rotate = toExp2(gamepad1.right_stick_x);
-
-            double frontLeftPow = (forward + strafe + rotate) * modifier;
-            double backLeftPow = (forward - strafe + rotate) * modifier;
-            double frontRightPow = (forward - strafe - rotate) * modifier;
-            double backRightPow = (forward + strafe - rotate) * modifier;
-
-            drive.setMotorPowers(frontLeftPow, frontRightPow, backLeftPow, backRightPow);
             if (gamepad2.left_stick_y != 0) { // regular rotation mode
                 targetMode = false;
                 slide.setSlidePower(-gamepad2.left_stick_y * (1 - 0.8 * gamepad2.right_trigger));
@@ -93,15 +78,6 @@ public class teleOp extends LinearOpMode {
             rotator.setRotatorPower((gamepad2.right_bumper ? -1 : (gamepad2.left_bumper ? 1 : 0)) * (1 - 0.8 * gamepad2.right_trigger));
             slide.setGrabberPosition(gamepad2.b, gamepad2.x);
 
-            telemetry.addData("Drive", forward);
-            telemetry.addData("Strafe", strafe);
-            telemetry.addData("Rotate", rotate);
-
-            Orientation orientation = drive.getOrientation();
-            telemetry.addData("X", orientation.firstAngle);
-            telemetry.addData("Y", orientation.secondAngle);
-            telemetry.addData("Z", orientation.thirdAngle);
-
             telemetry.addData("Linear Slide Position", slide.slide.getCurrentPosition());
             telemetry.addData("Rotator Position", slide.rotator.getCurrentPosition());
             telemetry.addData("Grabber Position", slide.grabber.getPosition());
@@ -111,7 +87,5 @@ public class teleOp extends LinearOpMode {
         }
     }
 
-    double toExp2(double num) {
-        return Math.pow(num, 2) * (num > 0 ? 1 : -1);
-    }
+
 }

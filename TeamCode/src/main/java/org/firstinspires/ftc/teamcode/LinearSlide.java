@@ -9,6 +9,8 @@ public class LinearSlide {
     DcMotor rotator;
     Servo grabber;
 
+    boolean l1 = false;
+
     public LinearSlide(DcMotor slide, DcMotor rotator, Servo grabber) {
         this.slide = slide;
         this.slide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -34,13 +36,20 @@ public class LinearSlide {
     }
 
     public void setSlidePower(double slidePower) {
+        setSlidePower(slidePower, false);
+    }
+    public void setSlidePower(double slidePower, boolean l1) {
 
         slide.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        if (slidePower <= 0 && slide.getCurrentPosition() < 50) {
+        if (slidePower <= 0 && slide.getCurrentPosition() < 50 && !l1) {
             slide.setPower(0);
         } else {
             slide.setPower(slidePower);
+        }
+
+        if (!this.l1 && l1) {
+            slide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         }
     }
 
