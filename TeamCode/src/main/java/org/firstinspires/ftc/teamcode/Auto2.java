@@ -5,6 +5,7 @@ import android.os.SystemClock;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -21,7 +22,7 @@ import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import java.util.List;
 
 
-@Autonomous(name = "Auto", group = "Autonomous")
+@Disabled
 public class Auto2 extends LinearOpMode {
 
     private static final String TENSORFLOW_ASSET_NAME = "FreightFrenzy_BCDM.tflite"; // name of presaved bundle tflite model
@@ -87,7 +88,7 @@ public class Auto2 extends LinearOpMode {
         }
 
         // initialize position detection
-        imu.startAccelerationIntegration(new Position(DistanceUnit.CM, 0, 0, 0, 0), new Velocity(DistanceUnit.CM, 0, 0, 0, 0), 100);
+        imu.startAccelerationIntegration(new Position(DistanceUnit.CM, 0, 0, 0, 0), new Velocity(DistanceUnit.CM, 0, 0, 0, 0), 20);
 
 
         telemetry.addData(">", "Ready");
