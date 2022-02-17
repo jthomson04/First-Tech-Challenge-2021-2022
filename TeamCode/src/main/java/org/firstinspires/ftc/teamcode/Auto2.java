@@ -7,6 +7,7 @@ import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -22,7 +23,7 @@ import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import java.util.List;
 
 
-@Disabled
+@Autonomous(name="Auto2")
 public class Auto2 extends LinearOpMode {
 
     private static final String TENSORFLOW_ASSET_NAME = "FreightFrenzy_BCDM.tflite"; // name of presaved bundle tflite model
@@ -74,18 +75,19 @@ public class Auto2 extends LinearOpMode {
         // connect to peripheral motors and sensors
         slide = new LinearSlide(hardwareMap.get(DcMotor.class, "linearslide"), hardwareMap.get(DcMotor.class, "rotator"), hardwareMap.get(Servo.class, "grabber"));
         rotator = new CarouselRotator(hardwareMap.get(DcMotor.class, "carousel"));
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
         drive = new MecanumDrive(frontLeft, frontRight, backLeft, backRight, imu);
         color = hardwareMap.get(RevColorSensorV3.class, "color");
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+
 
         telemetry.addData(">", "Initializing");
         telemetry.update();
 
         // Ensure the IMU has completed calibrating
 
-        while (!imu.isSystemCalibrated() && opModeIsActive()) {
+        /*while (!imu.isSystemCalibrated() && opModeIsActive()) {
             wait(50);
-        }
+        }*/
 
         // initialize position detection
         imu.startAccelerationIntegration(new Position(DistanceUnit.CM, 0, 0, 0, 0), new Velocity(DistanceUnit.CM, 0, 0, 0, 0), 20);
@@ -107,15 +109,16 @@ public class Auto2 extends LinearOpMode {
         // deploy grabber and lift it to allow distance sensor to detect capstone
         Initializer.initializeGrabber(slide.grabber, slide.slide, this);
         slide.setGrabberPosition(true, false);
+        wait(500);
         slide.goToPosition(teleOp.heightPresets[2]);
 
         DuckPosition position = searchForDuck();
 
         // shift to align with shipping hub
-        strafe(true, 1, 675, 0, true);
+        strafe(true, 1, 1000, 0, true);
 
         waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.RIGHT ? 300 : 0);
-        forward(0.6, 1175, 0);
+        forward(0.6, 525, 0);
         slide.setGrabberPosition(false, true);
         forward(-0.6, 800, 0);
         slide.goDown();
@@ -123,27 +126,29 @@ public class Auto2 extends LinearOpMode {
         // head to carousel
         turn(-90);
         forward(0.75, 10000, -90, 9.5);
-        strafe(false, 0.2, 2000, -90, true);
+        strafe(false, 0.25, 2000, -90, true);
         rotator.setRotatorPower(0.8);
         wait(3000);
         rotator.setRotatorPower(0);
 
         // head to warehouse
         turn(-90);
-        strafe(true, 1, 350, -90, true);
         slide.grabber.setPosition(0.6);
         slide.goToPosition(2250);
         forward(-1, 500, -90);
         wait(100);
         turn(90);
         wait(100);
-        strafe(false, 1, 245, 90, true);
+        strafe(false, 1, 350, 90, true);
         wait(100);
-        forward(1, 4000, 90, 8);
+        forward(1, 1750, 90);
+        wait(100);
+        strafe(false, 1, 450, 90, true);
+        forward(1, 2250, 90, 8);
         forward(-0.45, 500, 90);
         slide.goDown();
         slide.setGrabberPosition(false, true);
-        wait(5000);
+        wait(5000);strafe(false, 1, 350, 90, true);
 
     }
 
@@ -157,21 +162,22 @@ public class Auto2 extends LinearOpMode {
         3. If not found, assume the duck is on the left
          */
 
-        forward(0.25, 1500, 0);
+        forward(0.2, 2650, 0);
         DuckPosition position = null;
-        if (getColorData()[4] < 5) {
+        if (getColorData()[4] < 10) {
             position = DuckPosition.MIDDLE;
         }
-        strafe(true, 0.3, 1000, 0, true);
+        strafe(true, 0.3, 1150, 0, true);
 
         // check if the duck hasn't already been found
         if (position == null) {
-            if (getColorData()[4] < 5) {
+            if (getColorData()[4] < 10) {
                 position = DuckPosition.RIGHT;
             } else {
                 position = DuckPosition.LEFT;
             }
         }
+        forward(-0.2, 200, 0);
         return position;
 
     }

@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-
+@TeleOp(name="Range Test")
 public class ColorRangeTest extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
