@@ -8,7 +8,8 @@ public class LinearSlide {
     DcMotor slide;
     DcMotor rotator;
     Servo grabber;
-    boolean override = false;
+    boolean slideOverride = false;
+    boolean rotatorOverride = false;
 
     public LinearSlide(DcMotor slide, DcMotor rotator, Servo grabber) {
         this.slide = slide;
@@ -25,13 +26,19 @@ public class LinearSlide {
         this.grabber = grabber;
     }
 
-    public void setRotatorPower(double rotatorPower) {
+    public void setRotatorPower(double rotatorPower, boolean override) {
         rotator.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        if (rotatorPower <= 0 && rotator.getCurrentPosition() < 50) {
+
+        if (rotatorPower <= 0 && rotator.getCurrentPosition() < 50 && !override) {
             rotator.setPower(0);
         } else {
             rotator.setPower(rotatorPower);
         }
+
+        if (this.rotatorOverride && !override) {
+            rotator.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        }
+        this.rotatorOverride = override;
     }
 
     public void setSlidePower(double slidePower) {
@@ -48,10 +55,10 @@ public class LinearSlide {
             slide.setPower(slidePower);
         }
 
-        if (this.override && !override) {
+        if (this.slideOverride && !override) {
             slide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         }
-        this.override = override;
+        this.slideOverride = override;
     }
 
     public int getPosition() {

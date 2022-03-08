@@ -23,7 +23,7 @@ import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import java.util.List;
 
 
-@Autonomous(name="Auto2")
+@Autonomous(name="Auto")
 public class Auto2 extends LinearOpMode {
 
     private static final String TENSORFLOW_ASSET_NAME = "FreightFrenzy_BCDM.tflite"; // name of presaved bundle tflite model
@@ -117,22 +117,22 @@ public class Auto2 extends LinearOpMode {
         // shift to align with shipping hub
         strafe(true, 1, 1000, 0, true);
 
-        waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.RIGHT ? 300 : 0);
-        forward(0.6, 525, 0);
+        waitOnSlidePosition(position == DuckPosition.LEFT ? teleOp.heightPresets[1] : (position == DuckPosition.MIDDLE ? teleOp.heightPresets[2] : teleOp.heightPresets[3]), position == DuckPosition.RIGHT ? 425 : 0);
+        forward(0.6, 410, 0);
         slide.setGrabberPosition(false, true);
-        forward(-0.6, 800, 0);
+        forward(-0.6, 650, 0);
         slide.goDown();
 
         // head to carousel
         turn(-90);
         forward(0.75, 10000, -90, 9.5);
-        strafe(false, 0.25, 2000, -90, true);
+        strafe(false, 0.25, 1200, -90, true);
         rotator.setRotatorPower(0.8);
         wait(3000);
         rotator.setRotatorPower(0);
 
         // head to warehouse
-        turn(-90);
+        turn(-90, 0.2, 0.2, 1);
         slide.grabber.setPosition(0.6);
         slide.goToPosition(2250);
         forward(-1, 500, -90);
@@ -143,13 +143,12 @@ public class Auto2 extends LinearOpMode {
         wait(100);
         forward(1, 1750, 90);
         wait(100);
-        strafe(false, 1, 450, 90, true);
+        strafe(false, 1, 350, 90, true);
         forward(1, 2250, 90, 8);
         forward(-0.45, 500, 90);
         slide.goDown();
         slide.setGrabberPosition(false, true);
-        wait(5000);strafe(false, 1, 350, 90, true);
-
+        wait(5000);
     }
 
     private DuckPosition searchForDuck() {
@@ -162,12 +161,12 @@ public class Auto2 extends LinearOpMode {
         3. If not found, assume the duck is on the left
          */
 
-        forward(0.2, 2650, 0);
+        forward(0.2, 2750, 0);
         DuckPosition position = null;
         if (getColorData()[4] < 10) {
             position = DuckPosition.MIDDLE;
         }
-        strafe(true, 0.3, 1150, 0, true);
+        strafe(true, 0.3, 1250, 0, true);
 
         // check if the duck hasn't already been found
         if (position == null) {

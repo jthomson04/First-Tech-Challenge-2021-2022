@@ -15,7 +15,8 @@ public class teleOp extends LinearOpMode {
     private LinearSlide slide;
     private CarouselRotator rotator;
     private int currentTarget = 0;
-
+    boolean slowOverride = false;
+    boolean slowOverridePressed = false;
 
     @Override
     public void runOpMode() {
@@ -45,9 +46,15 @@ public class teleOp extends LinearOpMode {
 
         long prevPress = 0;
         while (opModeIsActive()) {
+
+            if (gamepad1.right_bumper && !slowOverridePressed) {
+                slowOverride = !slowOverride;
+            }
+            slowOverridePressed = gamepad1.right_bumper;
+
             prevTargetMode = targetMode;
             targetMode = gamepad2.dpad_up || gamepad2.dpad_down || prevTargetMode;
-            modifier = 1 - 0.8 * gamepad1.right_trigger;
+            modifier = 1 - 0.8 * (slowOverride ? 1 : gamepad1.right_trigger);
 
             forward = toExp2(-gamepad1.left_stick_y);
             strafe = toExp2(gamepad1.left_stick_x);
@@ -86,7 +93,7 @@ public class teleOp extends LinearOpMode {
                 slide.setSlidePower(-gamepad2.left_stick_y * (1 - 0.8 * gamepad2.right_trigger), gamepad2.back);
             }
             if (!gamepad2.a) {
-                slide.setRotatorPower(-gamepad2.right_stick_y * .2 * (1 - 0.8 * gamepad2.right_trigger));
+                slide.setRotatorPower(-gamepad2.right_stick_y * .2 * (1 - 0.8 * gamepad2.right_trigger), gamepad2.back);
             }
 
 
