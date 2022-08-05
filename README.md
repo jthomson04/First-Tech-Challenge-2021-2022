@@ -1,3 +1,4 @@
+### My code can be found in the TeamCode/src/main/java/org/firstinspires/ftc/teamcode directory
 ## NOTICE
 
 This repository contains the public FTC SDK for the Freight Frenzy (2021-2022) competition season.
